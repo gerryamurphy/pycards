@@ -6,7 +6,8 @@ import stat
 import os
 import pycards
 import logging
-
+from pycards import Deck
+from pycards import Logger
 
 def parse_args():
     pars = argparse.ArgumentParser()
@@ -108,11 +109,15 @@ def pfclose(fp):
 if __name__ == '__main__':
     args = parse_args()
     db = os.path.abspath(os.path.expanduser(args.database))
+    deck2 = Deck(db, args.deckname)
 
-    pycards.setup_logger(args.logfile, args.loglevel)
+    # Setup loging
+    logger = Logger(args.logfile, args.loglevel)
+    logger.setup_logger()
     if args.which == 'list':
         print('\t'.join(['name', 'date added', 'entries']))
-        for deck in pycards.list_decks(db, args.deckname):
+
+        for deck in deck2.list_decks():
             print('\t'.join([
                 deck['name'],
                 time.strftime('%x %X', time.localtime(deck['date_added'])),
@@ -127,12 +132,12 @@ if __name__ == '__main__':
                     print(formats.format(a, b, times, correct))
 
     elif args.which == 'load':
-        pycards.load_from_file(args.filepath, db, args.deckname)
+        deck2.load_from_file(args.filepath)
         pfclose(args.filepath)
     elif args.which == 'remove':
         for deck in args.deckname:
             print('decks removed for {}: {}'.format(
-                deck, pycards.remove_deck(db, deck)))
+                deck, deck2.remove_deck(deck)))
     elif args.which == 'export':
         for deckname in args.deckname:
             for line in pycards.export_deck(db, deckname):
@@ -141,14 +146,47 @@ if __name__ == '__main__':
     elif args.which == 'session':
         ses = pycards.session(
             db, args.deckname, args.inverse, args.random, args.leitner)
-        try:
-            for s in ses:
-                answer = input(s + ':\n')
-                if ses.answer_current(answer):
-                    print('correct!')
-                else:
-                    print('incorrect, it had to be: "{}"'.format(ses.answer))
-            stats = ses.write_stats()
-        except KeyboardInterrupt:
-            stats = ses.write_stats(False)
-        print('\nFinished\n\nGrade: {}'.format(stats))
+        pycards.start_learning(ses)
+        # os.system('clear')
+        # try:
+        #     for s in ses:
+        #         #os.system('clear')
+        #
+        #         #answer = ""
+        #         print ("###### Front-side #########")
+        #         for i in range(0,2):
+        #             print('#')
+        #         print ("# {}: ".format(s))
+        #         for i in range(0,2):
+        #             print('#')
+        #         print ("###### Flip-side #########")
+        #         for i in range(0,2):
+        #             print('#')
+        #         #answer = input(s + ':\n')
+        #
+        #         for i in range(0,2):
+        #             print('#')
+        #
+        #         passFailAbort=input("Know the Answer? Type Pass/Fail/Skip (p/f/s/d)")
+        #         if passFailAbort.lower()== 'p':
+        #             answer = 'correct'
+        #
+        #         elif passFailAbort.lower()== 'f':
+        #             answer = 'fail'
+        #
+        #         elif passFailAbort.lower()== 'd':
+        #             answer = 'delete'
+        #         elif passFailAbort.lower()== 's':
+        #             answer = 'skip'
+        #         ses.answer_current(answer)
+        #         print ("# {}: ".format(ses.answer))
+        #
+        #         if ses.answer_current(answer):
+        #             print('correct!')
+        #         else:
+        #             print('incorrect, it had to be: "{}"'.format(ses.answer))
+        #     print ("# {}: ".format(ses.answer))
+        #     stats = ses.write_stats()
+        # except KeyboardInterrupt:
+        #     stats = ses.write_stats(False)
+        # print('\nFinished\n\nGrade: {}'.format(stats))
